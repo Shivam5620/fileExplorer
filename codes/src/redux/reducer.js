@@ -1,71 +1,142 @@
-// reducer.js
-import { ADD_ITEM, DELETE_ITEM, RENAME_ITEM } from "./actions";
+import { ADD_ITEM, DELETE_ITEM, RENAME_ITEM, TOGGLE_CHILDREN } from "./actions";
 
 const initialState = {
-  files: [
-    // Initial folder structure
+  folderData: [
     {
-      id: "1",
-      name: "src",
+      name: "project-root",
       type: "folder",
+      id: 1,
+      showChildren: true,
       children: [
-        { id: "2", name: "App.js", type: "file" },
-        { id: "3", name: "index.js", type: "file" },
+        {
+          name: ".vscode",
+          type: "folder",
+          id: 2,
+          showChildren: false,
+          children: [
+            { name: "settings.json", type: "file", id: 3 },
+            { name: "launch.json", type: "file", id: 4 },
+          ],
+        },
+        {
+          name: "node_modules",
+          type: "folder",
+          id: 5,
+          showChildren: false,
+          children: [
+            {
+              name: "react",
+              type: "folder",
+              id: 6,
+              showChildren: false,
+              children: [
+                { name: "index.js", type: "file", id: 7 },
+              ],
+            },
+          ],
+        },
+        {
+          name: "public",
+          type: "folder",
+          id: 8,
+          showChildren: false,
+          children: [
+            { name: "index.html", type: "file", id: 9 },
+            { name: "favicon.ico", type: "file", id: 10 },
+          ],
+        },
+        {
+          name: "src",
+          type: "folder",
+          id: 11,
+          showChildren: false,
+          children: [
+            {
+              name: "components",
+              type: "folder",
+              id: 12,
+              showChildren: false,
+              children: [
+                { name: "App.js", type: "file", id: 13 },
+                { name: "App.css", type: "file", id: 14 },
+              ],
+            },
+            { name: "index.js", type: "file", id: 15 },
+            { name: "index.css", type: "file", id: 16 },
+          ],
+        },
+        { name: ".gitignore", type: "file", id: 17 },
+        { name: "package.json", type: "file", id: 18 },
+        { name: "README.md", type: "file", id: 19 },
       ],
     },
   ],
 };
 
-const findItemById = (items, itemId) => {
-  for (const item of items) {
-    if (item.id === itemId) return item;
-    if (item.children) {
-      const found = findItemById(item.children, itemId);
-      if (found) return found;
-    }
-  }
-  return null;
+const updateFolderStructure = (folders, itemId, callback) => {
+  return folders
+    .map((folder) => {
+      if (folder.id === itemId) {
+        return callback(folder);
+      } else if (folder.children) {
+        return {
+          ...folder,
+          children: updateFolderStructure(folder.children, itemId, callback),
+        };
+      }
+      return folder;
+    })
+    .filter(Boolean); // Filter out any 'null' values (used in deleteItem)
 };
 
-const fileReducer = (state = initialState, action) => {
+export const fileExplorerReducer = (state = initialState, action) => {
   switch (action.type) {
-    case ADD_ITEM: {
-      const { parentId, newItem } = action.payload;
-      const updatedFiles = [...state.files];
-      const parent = findItemById(updatedFiles, parentId);
-      if (parent && parent.type === "folder") {
-        parent.children = [...(parent.children || []), newItem];
-      }
-      return { ...state, files: updatedFiles };
-    }
-
-    case DELETE_ITEM: {
-      const updatedFiles = [...state.files];
-      const deleteRecursive = (items, itemId) => {
-        return items.filter((item) => {
-          if (item.id === itemId) return false;
-          if (item.children) {
-            item.children = deleteRecursive(item.children, itemId);
-          }
-          return true;
-        });
+    case ADD_ITEM:
+      return {
+        ...state,
+        folderData: updateFolderStructure(
+          state.folderData,
+          action.payload.parentId,
+          (folder) => ({
+            ...folder,
+            children: [...folder.children, action.payload.item],
+          })
+        ),
       };
-      return { ...state, files: deleteRecursive(updatedFiles, action.payload) };
-    }
-
-    case RENAME_ITEM: {
-      const { itemId, newName } = action.payload;
-      const updatedFiles = [...state.files];
-      const item = findItemById(updatedFiles, itemId);
-      if (item) {
-        item.name = newName;
-      }
-      return { ...state, files: updatedFiles };
-    }
-
+    case DELETE_ITEM:
+      return {
+        ...state,
+        folderData: updateFolderStructure(
+          state.folderData,
+          action.payload.itemId,
+          () => null // Returning null will filter out the item
+        ),
+      };
+    case RENAME_ITEM:
+      return {
+        ...state,
+        folderData: updateFolderStructure(
+          state.folderData,
+          action.payload.itemId,
+          (folder) => ({
+            ...folder,
+            name: action.payload.newName,
+          })
+        ),
+      };
+    case TOGGLE_CHILDREN:
+      return {
+        ...state,
+        folderData: updateFolderStructure(
+          state.folderData,
+          action.payload.itemId,
+          (folder) => ({
+            ...folder,
+            showChildren: !folder.showChildren,
+          })
+        ),
+      };
     default:
       return state;
   }
 };
-
-export default fileReducer;

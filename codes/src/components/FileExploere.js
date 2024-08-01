@@ -1,32 +1,43 @@
+// FileExplorer.js
 import React, { useState } from "react";
+import { connect } from "react-redux";
+import {
+  addItem,
+  deleteItem,
+  renameItem,
+  toggleChildren,
+} from "../redux/actions";
 import { toast } from "react-toastify";
 
-const FileExploere = ({ FolderData, onDelete, onFileClick }) => {
-  const [showChildren, setShowChildren] = useState(false);
-  const [children, setChildren] = useState(FolderData.children || []);
+const FileExplorer = ({
+  FolderData,
+  addItem,
+  deleteItem,
+  renameItem,
+  toggleChildren,
+  onFileClick,
+}) => {
   const [newItemName, setNewItemName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
   const [itemName, setItemName] = useState(FolderData.name);
-
-  const handleClick = () => {
-    setShowChildren(!showChildren);
-  };
 
   const handleAddFolder = () => {
     if (!newItemName.trim()) {
       toast.error("Folder name cannot be empty");
       return;
     }
-    if (children.some((child) => child.name === newItemName)) {
+    if (FolderData.children.some((child) => child.name === newItemName)) {
       toast.error("Folder name already exists");
       return;
     }
     const newFolder = {
+      id: Date.now(),
       name: newItemName,
       type: "folder",
+      showChildren: false,
       children: [],
     };
-    setChildren([...children, newFolder]);
+    addItem(FolderData.id, newFolder);
     setNewItemName("");
     toast.success("Folder added successfully");
   };
@@ -36,15 +47,16 @@ const FileExploere = ({ FolderData, onDelete, onFileClick }) => {
       toast.error("File name cannot be empty");
       return;
     }
-    if (children.some((child) => child.name === newItemName)) {
+    if (FolderData.children.some((child) => child.name === newItemName)) {
       toast.error("File name already exists");
       return;
     }
     const newFile = {
+      id: Date.now(),
       name: newItemName,
       type: "file",
     };
-    setChildren([...children, newFile]);
+    addItem(FolderData.id, newFile);
     setNewItemName("");
     toast.success("File added successfully");
   };
@@ -58,25 +70,22 @@ const FileExploere = ({ FolderData, onDelete, onFileClick }) => {
       toast.error("Name cannot be empty");
       return;
     }
+    renameItem(FolderData.id, itemName);
     setIsRenaming(false);
-    FolderData.name = itemName;
     toast.success("Item renamed successfully");
   };
 
   const handleDelete = () => {
-    onDelete(FolderData);
+    deleteItem(FolderData.id);
     toast.success("Item deleted successfully");
   };
 
   return (
-    
     <div
       className="ml-4 mb-2 p-2 border border-gray-200 rounded-lg shadow-md bg-white"
       style={{ borderLeft: "1px solid black", paddingLeft: "0.5rem" }}
-    
     >
-      
-      {showChildren && (
+      {FolderData.showChildren && (
         <div className="mb-2">
           <input
             type="text"
@@ -99,8 +108,12 @@ const FileExploere = ({ FolderData, onDelete, onFileClick }) => {
           </button>
         </div>
       )}
-      <div className="flex items-center ">
-        {FolderData.type === "folder" ? (showChildren ? "📂" : "📁") : "📄"}
+      <div className="flex items-center">
+        {FolderData.type === "folder"
+          ? FolderData.showChildren
+            ? "📂"
+            : "📁"
+          : "📄"}
         {isRenaming ? (
           <>
             <input
@@ -121,34 +134,37 @@ const FileExploere = ({ FolderData, onDelete, onFileClick }) => {
         ) : (
           <>
             <span
-              onClick={FolderData.type === "file" ? () => onFileClick(FolderData) : handleClick}
+              onClick={
+                FolderData.type === "file"
+                  ? () => onFileClick(FolderData) // Handle file click
+                  : () => toggleChildren(FolderData.id)
+              }
               className="cursor-pointer ml-2 text-gray-700 hover:text-gray-900 m-2"
             >
               {FolderData.name}
             </span>
             <button
               onClick={handleRename}
-              className="ml-2 p-1 bg-gray-300 rounded-md hover:bg-gray-400" style={{marginLeft:"5px"}}
+              className="ml-2 p-1 bg-gray-300 rounded-md hover:bg-gray-400"
+              style={{ marginLeft: "5px" }}
             >
               ✏️
             </button>
             <button
               onClick={handleDelete}
               className="ml-2 p-1 bg-red-500 text-white rounded-md hover:bg-red-600"
+              style={{ marginLeft: "5px" }}
             >
               🗑️
             </button>
           </>
         )}
       </div>
-      {showChildren &&
-        children.map((childdata, index) => (
-          <FileExploere
+      {FolderData.showChildren &&
+        FolderData.children.map((childdata, index) => (
+          <ConnectedFileExplorer
             key={index}
             FolderData={childdata}
-            onDelete={(item) => {
-              setChildren(children.filter((child) => child !== item));
-            }}
             onFileClick={onFileClick}
           />
         ))}
@@ -156,4 +172,13 @@ const FileExploere = ({ FolderData, onDelete, onFileClick }) => {
   );
 };
 
-export default FileExploere;
+const mapDispatchToProps = {
+  addItem,
+  deleteItem,
+  renameItem,
+  toggleChildren,
+};
+
+const ConnectedFileExplorer = connect(null, mapDispatchToProps)(FileExplorer);
+
+export default ConnectedFileExplorer;

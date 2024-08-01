@@ -1,25 +1,25 @@
-export const ADD_ITEM = 'ADD_ITEM';
-export const RENAME_ITEM = 'RENAME_ITEM';
-export const DELETE_ITEM = 'DELETE_ITEM';
 // actions.js
-export const SELECT_FILE = 'SELECT_FILE';
+export const ADD_ITEM = "ADD_ITEM";
+export const DELETE_ITEM = "DELETE_ITEM";
+export const RENAME_ITEM = "RENAME_ITEM";
+export const TOGGLE_CHILDREN = "TOGGLE_CHILDREN";
 
-export const selectFile = (file) => ({
-  type: SELECT_FILE,
-  payload: file,
-});
-
-export const addItem = (parentPath, newItem) => ({
+export const addItem = (parentId, item) => ({
   type: ADD_ITEM,
-  payload: { parentPath, newItem },
+  payload: { parentId, item },
 });
 
-export const renameItem = (itemPath, newName) => ({
-  type: RENAME_ITEM,
-  payload: { itemPath, newName },
-});
-
-export const deleteItem = (itemPath) => ({
+export const deleteItem = (itemId) => ({
   type: DELETE_ITEM,
-  payload: itemPath,
+  payload: { itemId },
+});
+
+export const renameItem = (itemId, newName) => ({
+  type: RENAME_ITEM,
+  payload: { itemId, newName },
+});
+
+export const toggleChildren = (itemId) => ({
+  type: TOGGLE_CHILDREN,
+  payload: { itemId },
 });
