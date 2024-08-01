@@ -1,17 +1,23 @@
-// FileContent.js
 import React from "react";
 
-const FileContent = ({ file }) => {
+const FileViewer = ({ file }) => {
   if (!file) {
     return <div>Select a file to view its content</div>;
   }
 
   return (
-    <div className="p-4 border border-gray-300 rounded-lg shadow-md bg-white">
-      <h2 className="text-lg font-bold mb-2">{file.name}</h2>
-      <div className="whitespace-pre-wrap">{file.content || "No content available"}</div>
+    <div>
+      <h2>{file.name}</h2>
+      {file.type === "file" ? (
+        <div>
+          {/* You can add more detailed file content display here */}
+          <p>This is the content of the file {file.name}</p>
+        </div>
+      ) : (
+        <div>This is a folder. Click on a file to view its content.</div>
+      )}
     </div>
   );
 };
 
-export default FileContent;
+export default FileViewer;

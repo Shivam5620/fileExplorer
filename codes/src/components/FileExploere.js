@@ -76,9 +76,12 @@ const FileExplorer = ({
   };
 
   const handleDelete = () => {
-    deleteItem(FolderData.id);
-    toast.success("Item deleted successfully");
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      deleteItem(FolderData.id);
+      toast.success("Item deleted successfully");
+    }
   };
+  
 
   return (
     <div
