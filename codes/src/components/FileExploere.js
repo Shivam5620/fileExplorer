@@ -16,10 +16,28 @@ const FileExplorer = ({
   renameItem,
   toggleChildren,
   onFileClick,
+  searchTerm = "",
 }) => {
   const [newItemName, setNewItemName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
   const [itemName, setItemName] = useState(FolderData.name);
+
+  // 🔍 Search filter logic
+  const matchesSearch = (item) => {
+    if (!searchTerm) return true;
+    return item.name.toLowerCase().includes(searchTerm.toLowerCase());
+  };
+
+  const filteredChildren = FolderData.children
+    ? FolderData.children.filter(
+        (child) =>
+          matchesSearch(child) ||
+          (child.children &&
+            child.children.some((sub) =>
+              sub.name.toLowerCase().includes(searchTerm.toLowerCase())
+            ))
+      )
+    : [];
 
   const handleAddFolder = () => {
     if (!newItemName.trim()) {
@@ -61,9 +79,7 @@ const FileExplorer = ({
     toast.success("File added successfully");
   };
 
-  const handleRename = () => {
-    setIsRenaming(true);
-  };
+  const handleRename = () => setIsRenaming(true);
 
   const handleSaveRename = () => {
     if (!itemName.trim()) {
@@ -81,14 +97,17 @@ const FileExplorer = ({
       toast.success("Item deleted successfully");
     }
   };
-  
+
+  // 🔍 Hide if not matching search and no children match
+  if (!matchesSearch(FolderData) && filteredChildren.length === 0) return null;
 
   return (
     <div
       className="ml-4 mb-2 p-2 border border-gray-200 rounded-lg shadow-md bg-white"
       style={{ borderLeft: "1px solid black", paddingLeft: "0.5rem" }}
     >
-      {FolderData.showChildren && (
+      {/* Add new file/folder input (only for folder with open children) */}
+      {FolderData.type === "folder" && FolderData.showChildren && (
         <div className="mb-2">
           <input
             type="text"
@@ -111,12 +130,15 @@ const FileExplorer = ({
           </button>
         </div>
       )}
+
+      {/* Folder/File display */}
       <div className="flex items-center">
         {FolderData.type === "folder"
           ? FolderData.showChildren
             ? "📂"
             : "📁"
           : "📄"}
+
         {isRenaming ? (
           <>
             <input
@@ -139,7 +161,7 @@ const FileExplorer = ({
             <span
               onClick={
                 FolderData.type === "file"
-                  ? () => onFileClick(FolderData) // Handle file click
+                  ? () => onFileClick(FolderData)
                   : () => toggleChildren(FolderData.id)
               }
               className="cursor-pointer ml-2 text-gray-700 hover:text-gray-900 m-2"
@@ -163,18 +185,22 @@ const FileExplorer = ({
           </>
         )}
       </div>
+
+      {/* Recursive rendering of children */}
       {FolderData.showChildren &&
-        FolderData.children.map((childdata, index) => (
+        filteredChildren.map((child, index) => (
           <ConnectedFileExplorer
             key={index}
-            FolderData={childdata}
+            FolderData={child}
             onFileClick={onFileClick}
+            searchTerm={searchTerm} // 🔍 pass down recursively
           />
         ))}
     </div>
   );
 };
 
+// Redux actions
 const mapDispatchToProps = {
   addItem,
   deleteItem,
@@ -182,6 +208,30 @@ const mapDispatchToProps = {
   toggleChildren,
 };
 
+// Connect component
 const ConnectedFileExplorer = connect(null, mapDispatchToProps)(FileExplorer);
 
-export default ConnectedFileExplorer;
+// ✅ Wrapper component with global search bar
+const FileExplorerWrapper = (props) => {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  return (
+    <div className="p-4">
+      {/* 🔍 Search Input */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search files or folders..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full border border-gray-300 p-2 rounded-md"
+        />
+      </div>
+
+      {/* Root folder */}
+      <ConnectedFileExplorer {...props} searchTerm={searchTerm} />
+    </div>
+  );
+};
+
+export default FileExplorerWrapper;
